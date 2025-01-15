@@ -5,14 +5,13 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 )
 
@@ -60,7 +59,6 @@ func run(filename string) error {
 func parseContent(input []byte, templateFile string) ([]byte, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Typographer),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
 			html.WithUnsafe(),
@@ -80,7 +78,7 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 	}
 
 	var htmlBody bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", output.Bytes()); err != nil {
+	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", output.String()); err != nil {
 		return nil, err
 	}
 
