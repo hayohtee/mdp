@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"flag"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
 
@@ -14,8 +16,10 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
+//go:embed "templates"
+var templateFS embed.FS
 
-func main()  {
+func main() {
 	// Parse command-line flags.
 	filename := flag.String("file", "", "Markdown file to preview")
 	flag.Parse()
@@ -38,7 +42,7 @@ func run(filename string) error {
 		return err
 	}
 
-	htmlData := parseContent(input)
+	htmlData := parseContent(input, "index.tmpl")
 
 	outputName := fmt.Sprintf("%s.html", filepath.Base(filename))
 	fmt.Println(outputName)
@@ -46,7 +50,9 @@ func run(filename string) error {
 	return saveHTML(outputName, htmlData)
 }
 
-func parseContent(input []byte) ([]byte, error) {
+// parseContent parses the content of the markdown file, sanitize it and
+// include embed the result html content into an empty html page.
+func parseContent(input []byte, templateFile string) ([]byte, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Typographer),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
@@ -61,5 +67,17 @@ func parseContent(input []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	body := bluemonday.UGCPolicy().SanitizeReader(&buf)
+	output := bluemonday.UGCPolicy().SanitizeReader(&buf)
+
+	tmpl, err := template.New("markdown").ParseFS(templateFS, fmt.Sprintf("templates/%s", templateFile))
+	if err != nil {
+		return nil, err
+	}
+
+	var htmlBody bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", output.Bytes()); err != nil {
+		return nil, err
+	}
+
+	return htmlBody.Bytes(), nil
 }
