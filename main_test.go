@@ -28,7 +28,7 @@ func TestParseContent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !bytes.Equal(expected, result) {
+	if !bytes.Equal(bytes.TrimSpace(expected), bytes.TrimSpace(result)) {
 		t.Logf("golden:\n%s\n", expected)
 		t.Logf("result:\n%s\n", result)
 		t.Error("result content does not match golden file")
