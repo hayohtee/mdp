@@ -36,13 +36,18 @@ func main() {
 	}
 }
 
+// run reads the content of the provided Markdown, convert it into
+// an HTML format and save it with the same name as the Markdown.
 func run(filename string) error {
 	input, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 
-	htmlData := parseContent(input, "index.tmpl")
+	htmlData, err := parseContent(input, "index.tmpl")
+	if err != nil {
+		return err
+	}
 
 	outputName := fmt.Sprintf("%s.html", filepath.Base(filename))
 	fmt.Println(outputName)
