@@ -1,10 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 
@@ -37,4 +44,22 @@ func run(filename string) error {
 	fmt.Println(outputName)
 
 	return saveHTML(outputName, htmlData)
+}
+
+func parseContent(input []byte) ([]byte, error) {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, extension.Typographer),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithUnsafe(),
+		),
+	)
+
+	var buf bytes.Buffer
+	if err := md.Convert(input, &buf); err != nil {
+		return nil, err
+	}
+
+	body := bluemonday.UGCPolicy().SanitizeReader(&buf)
 }
