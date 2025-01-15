@@ -86,3 +86,8 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 
 	return htmlBody.Bytes(), nil
 }
+
+// saveHTML saves the provided data to a file based on the provided filename.
+func saveHTML(outputName string, data []byte) error {
+	return os.WriteFile(outputName, data, 0644)
+}
