@@ -8,7 +8,6 @@ import (
 
 const (
 	inputFile  = "./testdata/test1.md"
-	resultFile = "test1.md.html"
 	goldenFile = "./testdata/test1.md.html"
 )
 
@@ -63,6 +62,6 @@ func TestRun(t *testing.T) {
 		t.Logf("result:\n%s\n", result)
 		t.Error("result content does not match golden file")
 	}
-	
+
 	os.Remove(resultFile)
 }
