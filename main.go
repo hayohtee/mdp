@@ -24,6 +24,7 @@ var templateFS embed.FS
 func main() {
 	// Parse command-line flags.
 	filename := flag.String("file", "", "Markdown file to preview")
+	skipPreview := flag.Bool("s", false, "Skip auto-preview")
 	flag.Parse()
 
 	// Check if the user provide the input file. If they did not, show usage.
