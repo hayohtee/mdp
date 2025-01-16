@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
-	"path/filepath"
+	"os/exec"
+	"runtime"
 	"text/template"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -21,6 +24,7 @@ var templateFS embed.FS
 func main() {
 	// Parse command-line flags.
 	filename := flag.String("file", "", "Markdown file to preview")
+	skipPreview := flag.Bool("s", false, "Skip auto-preview")
 	flag.Parse()
 
 	// Check if the user provide the input file. If they did not, show usage.
@@ -29,15 +33,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(*filename); err != nil {
+	if err := run(*filename, os.Stdout, *skipPreview); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 // run reads the content of the provided Markdown, convert it into
-// an HTML format and save it with the same name as the Markdown.
-func run(filename string) error {
+// an HTML format and save it in a temp folder, print the url
+// to the generated html file to the stdout and open the generated
+// file using default program if specified.
+func run(filename string, out io.Writer, skipPreview bool) error {
 	input, err := os.ReadFile(filename)
 	if err != nil {
 		return err
@@ -48,10 +54,29 @@ func run(filename string) error {
 		return err
 	}
 
-	outputName := fmt.Sprintf("%s.html", filepath.Base(filename))
-	fmt.Println(outputName)
+	// Create a temp file using mdp prefix and .html suffix.
+	temp, err := os.CreateTemp("", "mdp*.html")
+	if err != nil {
+		return err
+	}
 
-	return saveHTML(outputName, htmlData)
+	// Close the temp file since we're not writing to it at the moment.
+	if err := temp.Close(); err != nil {
+		return err
+	}
+
+	outputName := temp.Name()
+	fmt.Fprintln(out, outputName)
+
+	if err := saveHTML(outputName, htmlData); err != nil {
+		return err
+	}
+
+	if skipPreview {
+		return nil
+	}
+
+	return preview(outputName)
 }
 
 // parseContent parses the content of the markdown file, sanitize it and
@@ -88,4 +113,34 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 // saveHTML saves the provided data to a file based on the provided filename.
 func saveHTML(outputName string, data []byte) error {
 	return os.WriteFile(outputName, data, 0644)
+}
+
+// preview open the provided filename using the default program.
+func preview(filename string) error {
+	var commandName string
+	var commandParams []string
+
+	switch runtime.GOOS {
+	case "linux":
+		commandName = "xdg-open"
+	case "windows":
+		commandName = "cmd.exe"
+		commandParams = []string{"/C", "start"}
+	case "darwin":
+		commandName = "open"
+	default:
+		return errors.New("os not supported")
+	}
+
+	// Append the filename to command params
+	commandParams = append(commandParams, filename)
+
+	// Locate the executable in PATH
+	cmdPath, err := exec.LookPath(commandName)
+	if err != nil {
+		return err
+	}
+
+	// Open the file using default program
+	return exec.Command(cmdPath, commandParams...).Run()
 }
