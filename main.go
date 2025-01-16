@@ -33,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(*filename, os.Stdout); err != nil {
+	if err := run(*filename, os.Stdout, *skipPreview); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -41,7 +41,7 @@ func main() {
 
 // run reads the content of the provided Markdown, convert it into
 // an HTML format and save it in a temp folder, print the url
-// to the generated html file to the stdout and open the generated 
+// to the generated html file to the stdout and open the generated
 // file using default program if specified.
 func run(filename string, out io.Writer, skipPreview bool) error {
 	input, err := os.ReadFile(filename)
