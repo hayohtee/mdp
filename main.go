@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"text/template"
 
@@ -28,15 +29,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(*filename); err != nil {
+	if err := run(*filename, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 // run reads the content of the provided Markdown, convert it into
-// an HTML format and save it with the same name as the Markdown.
-func run(filename string) error {
+// an HTML format and save it in a temp folder and print the url
+// to the generated html file to the stdout.
+func run(filename string, out io.Writer) error {
 	input, err := os.ReadFile(filename)
 	if err != nil {
 		return err
@@ -59,7 +61,7 @@ func run(filename string) error {
 	}
 
 	outputName := temp.Name()
-	fmt.Println(outputName)
+	fmt.Fprintln(out, outputName)
 
 	return saveHTML(outputName, htmlData)
 }
