@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"runtime"
 	"text/template"
+	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
@@ -144,5 +145,10 @@ func preview(filename string) error {
 	}
 
 	// Open the file using default program
-	return exec.Command(cmdPath, commandParams...).Run()
+	err = exec.Command(cmdPath, commandParams...).Run()
+
+	// Give the browser some time to open the file before deleting it.
+	time.Sleep(2 * time.Second)
+
+	return err
 }
