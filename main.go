@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"runtime"
 	"text/template"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -100,4 +103,34 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 // saveHTML saves the provided data to a file based on the provided filename.
 func saveHTML(outputName string, data []byte) error {
 	return os.WriteFile(outputName, data, 0644)
+}
+
+// preview open the provided filename using the default program.
+func preview(filename string) error {
+	var commandName string
+	var commandParams []string
+
+	switch runtime.GOOS {
+	case "linux":
+		commandName = "xdg-open"
+	case "windows":
+		commandName = "cmd.exe"
+		commandParams = []string{"/C", "start"}
+	case "darwin":
+		commandName = "open"
+	default:
+		return errors.New("os not supported")
+	}
+
+	// Append the filename to command params
+	commandParams = append(commandParams, filename)
+
+	// Locate the executable in PATH
+	cmdPath, err := exec.LookPath(commandName)
+	if err != nil {
+		return err
+	}
+
+	// Open the file using default program
+	return exec.Command(cmdPath, commandParams...).Run()
 }
