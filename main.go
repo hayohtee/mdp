@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/template"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -48,7 +47,18 @@ func run(filename string) error {
 		return err
 	}
 
-	outputName := fmt.Sprintf("%s.html", filepath.Base(filename))
+	// Create a temp file using mdp prefix and .html suffix.
+	temp, err := os.CreateTemp("", "mdp*.html")
+	if err != nil {
+		return err
+	}
+
+	// Close the temp file since we're not writing to it at the moment.
+	if err := temp.Close(); err != nil {
+		return err
+	}
+
+	outputName := temp.Name()
 	fmt.Println(outputName)
 
 	return saveHTML(outputName, htmlData)
