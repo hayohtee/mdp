@@ -6,11 +6,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"os/exec"
 	"runtime"
-	"text/template"
+	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
@@ -33,7 +34,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := run(*filename, os.Stdout, *skipPreview); err != nil {
+	if err := run(*filename, "index.tmpl", os.Stdout, *skipPreview); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -43,13 +44,13 @@ func main() {
 // an HTML format and save it in a temp folder, print the url
 // to the generated html file to the stdout and open the generated
 // file using default program if specified.
-func run(filename string, out io.Writer, skipPreview bool) error {
+func run(filename, tfName string, out io.Writer, skipPreview bool) error {
 	input, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 
-	htmlData, err := parseContent(input, "index.tmpl")
+	htmlData, err := parseContent(input, tfName)
 	if err != nil {
 		return err
 	}
@@ -76,6 +77,8 @@ func run(filename string, out io.Writer, skipPreview bool) error {
 		return nil
 	}
 
+	defer os.Remove(outputName)
+
 	return preview(outputName)
 }
 
@@ -97,13 +100,18 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 
 	output := bluemonday.UGCPolicy().SanitizeReader(&buf)
 
-	tmpl, err := template.New("markdown").ParseFS(templateFS, fmt.Sprintf("templates/%s", templateFile))
+	tmpl, err := template.New("mdp").ParseFS(templateFS, fmt.Sprintf("templates/%s", templateFile))
 	if err != nil {
 		return nil, err
 	}
 
+	c := content{
+		Title: "Markdown Preview Tool",
+		Body:  template.HTML(output.String()),
+	}
+
 	var htmlBody bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", output.String()); err != nil {
+	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", c); err != nil {
 		return nil, err
 	}
 
@@ -142,5 +150,16 @@ func preview(filename string) error {
 	}
 
 	// Open the file using default program
-	return exec.Command(cmdPath, commandParams...).Run()
+	err = exec.Command(cmdPath, commandParams...).Run()
+
+	// Give the browser some time to open the file before deleting it.
+	time.Sleep(2 * time.Second)
+
+	return err
+}
+
+// content holds the data to add to the html template file.
+type content struct {
+	Title string
+	Body  template.HTML
 }
