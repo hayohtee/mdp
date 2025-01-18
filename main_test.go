@@ -32,7 +32,7 @@ func TestParseContent(t *testing.T) {
 	result = bytes.TrimSpace(result)
 	expected = bytes.TrimSpace(expected)
 
-	if !bytes.EqualFold(expected, result) {
+	if !bytes.Equal(expected, result) {
 		t.Logf("golden:\n%s\n", expected)
 		t.Logf("result:\n%s\n", result)
 		t.Error("result content does not match golden file")
@@ -42,7 +42,7 @@ func TestParseContent(t *testing.T) {
 func TestRun(t *testing.T) {
 	var mockStdOut bytes.Buffer
 
-	if err := run(inputFile, &mockStdOut, true); err != nil {
+	if err := run(inputFile, "index.tmpl", &mockStdOut, true); err != nil {
 		t.Fatal(err)
 	}
 
