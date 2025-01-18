@@ -6,11 +6,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"os/exec"
 	"runtime"
-	"text/template"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -151,4 +151,10 @@ func preview(filename string) error {
 	time.Sleep(2 * time.Second)
 
 	return err
+}
+
+// content holds the data to add to the html template file.
+type content struct {
+	Title string
+	Body  template.HTML
 }
