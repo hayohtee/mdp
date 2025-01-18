@@ -44,13 +44,13 @@ func main() {
 // an HTML format and save it in a temp folder, print the url
 // to the generated html file to the stdout and open the generated
 // file using default program if specified.
-func run(filename string, out io.Writer, skipPreview bool) error {
+func run(filename, tfName string, out io.Writer, skipPreview bool) error {
 	input, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 
-	htmlData, err := parseContent(input, "index.tmpl")
+	htmlData, err := parseContent(input, tfName)
 	if err != nil {
 		return err
 	}
@@ -100,13 +100,18 @@ func parseContent(input []byte, templateFile string) ([]byte, error) {
 
 	output := bluemonday.UGCPolicy().SanitizeReader(&buf)
 
-	tmpl, err := template.New("markdown").ParseFS(templateFS, fmt.Sprintf("templates/%s", templateFile))
+	tmpl, err := template.New("mdp").ParseFS(templateFS, fmt.Sprintf("templates/%s", templateFile))
 	if err != nil {
 		return nil, err
 	}
 
+	c := content{
+		Title: "Markdown Preview Tool",
+		Body:  template.HTML(output.String()),
+	}
+
 	var htmlBody bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", output.String()); err != nil {
+	if err := tmpl.ExecuteTemplate(&htmlBody, "htmlBody", c); err != nil {
 		return nil, err
 	}
 
